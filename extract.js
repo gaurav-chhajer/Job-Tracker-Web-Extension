@@ -76,7 +76,31 @@ export function extractJob() {
     company = pick(['[data-testid="inlineHeader-companyName"]', '[data-company-name="true"]']);
     const jk = new URLSearchParams(location.search).get("jk") || new URLSearchParams(location.search).get("vjk");
     if (jk) url = `${location.origin}/viewjob?jk=${jk}`;
+  } else if (host.endsWith("wellfound.com")) {
+  // Apply modal text reads: "APPLY TO / Heizen / Staff Forward Deployed… / ₹40L–₹50L / Location / Hyderabad …"
+  // Wellfound uses generated class names, so parse the visible text instead of selectors.
+  const dlg = document.querySelector('[role="dialog"], [class*="modal" i]');
+  const lines = ((dlg || document.body).innerText || "")
+    .split("\n").map(clean).filter(Boolean);
+  const i = lines.findIndex((l) => /^apply to$/i.test(l));
+  if (i >= 0) {
+    company = lines[i + 1] || "";
+    title = lines[i + 2] || "";
+    const li = lines.findIndex((l) => /^location$/i.test(l));
+    if (li >= 0) place = lines[li + 1] || "";
   }
+  // Fallbacks when no modal is open (job page /jobs/123-title or company page)
+  if (!company && parts[0] === "company" && parts[1]) company = cap(parts[1]);
+  if (!title && parts[0] === "jobs") title = pick(["h1"]);
+} else if (host.endsWith("workatastartup.com")) {
+  // Title format: "Role at Company | Y Combinator's Work at a Startup"
+  const m = (meta("og:title") || document.title).match(/^(.+) at (.+?)\s*\|/);
+  if (m) { title = clean(m[1]); company = clean(m[2]); }
+  // Location sits under a "Location" label
+  const lines = (document.body.innerText || "").split("\n").map(clean).filter(Boolean);
+  const li = lines.findIndex((l) => /^location$/i.test(l));
+  if (li >= 0) place = lines[li + 1] || "";
+}
 
   // 2. Structured data (JobPosting JSON-LD) used by most careers pages
   const posts = [];
