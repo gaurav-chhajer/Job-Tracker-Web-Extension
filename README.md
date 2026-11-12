@@ -74,7 +74,7 @@ your cookies.
 Things to know:
 
 - Counts are keyword matches, not exact employees, so common company names include unrelated people.
-- If the page shows no total, the extension counts the profile cards on screen and says "at least N".
+- If the page shows no total, the extension counts the result cards on screen that carry the right degree badge (1st or 2nd) and says "at least N".
 - LinkedIn changes its markup often. If counts stop working, the popup shows the reason.
 
 ## Permissions

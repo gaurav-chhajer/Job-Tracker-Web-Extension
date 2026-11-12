@@ -69,13 +69,13 @@ async function countFor(company, degree) {
       const t = await chrome.tabs.get(tab.id);
       if (t.status !== "complete") continue;
       let r;
-      try { [{ result: r }] = await chrome.scripting.executeScript({ target: { tabId: tab.id }, func: readCount }); }
+      try { [{ result: r }] = await chrome.scripting.executeScript({ target: { tabId: tab.id }, func: readCount, args: [degree === "F" ? "1st" : "2nd"] }); }
       catch (e) { return { error: "read", detail: e.message }; }
       if (r?.state === "login") return { error: "login" };
       if (r?.state === "ready") return { n: r.n, atLeast: !!r.atLeast };
       last = r;
     }
-    return { error: "timeout", detail: last ? `${last.url} | ${last.sample}` : "page never finished loading" };
+    return { error: "timeout", detail: last ? `${last.url} | profile links: ${last.links}, degree badge on page: ${last.badge} | ${last.sample}` : "page never finished loading" };
   } finally {
     chrome.tabs.remove(tab.id).catch(() => {});
   }
@@ -111,7 +111,7 @@ $("check").addEventListener("click", async () => {
     why.style.cssText = "font-size:11px;margin-bottom:6px;word-break:break-word";
     p.append(why);
   } else {
-    p.textContent = describeNetwork(company, first.n, second.n, first.atLeast || second.atLeast);
+    p.textContent = describeNetwork(company, first, second);
   }
   box.append(p, ...links);
 });

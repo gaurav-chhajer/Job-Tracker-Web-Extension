@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Job Application Tracker",
-  "version": "0.4.2",
+  "version": "0.4.5",
   "description": "Save job applications to your own Notion database in one click.",
   "action": {
     "default_popup": "popup.html",
