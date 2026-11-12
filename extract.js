@@ -72,11 +72,23 @@ export function extractJob() {
     company = cap(host.split(".")[0]);
     place = pick(['[data-automation-id="locations"] dd']);
   } else if (host.endsWith("indeed.com")) {
-    title = pick(['[data-testid="jobsearch-JobInfoHeader-title"]', ".jobsearch-JobInfoHeader-title"]);
-    company = pick(['[data-testid="inlineHeader-companyName"]', '[data-company-name="true"]']);
-    const jk = new URLSearchParams(location.search).get("jk") || new URLSearchParams(location.search).get("vjk");
-    if (jk) url = `${location.origin}/viewjob?jk=${jk}`;
-  } else if (host.endsWith("wellfound.com")) {
+  title = pick(['[data-testid="jobsearch-JobInfoHeader-title"]', ".jobsearch-JobInfoHeader-title"]);
+  company = pick(['[data-testid="inlineHeader-companyName"]', '[data-company-name="true"]']);
+  const jk = new URLSearchParams(location.search).get("jk") || new URLSearchParams(location.search).get("vjk");
+  if (jk) url = `${location.origin}/viewjob?jk=${jk}`;
+
+  // Apply flow (smartapply.indeed.com): card reads "Role" then "Company - Place"
+  if (host.startsWith("smartapply.") && !company) {
+    const lines = (document.body.innerText || "").split("\n").map(clean).filter(Boolean);
+    const j = lines.findIndex((l) => /^.+? - .+,.+$/.test(l));  // "Company - City, State"
+    if (j > 0) {
+      const m = lines[j].match(/^(.+?) - (.+)$/);
+      company = m[1];
+      place = m[2];
+      title = title || lines[j - 1];
+    }
+  }
+} else if (host.endsWith("wellfound.com")) {
   // Apply modal text reads: "APPLY TO / Heizen / Staff Forward Deployed… / ₹40L–₹50L / Location / Hyderabad …"
   // Wellfound uses generated class names, so parse the visible text instead of selectors.
   const dlg = document.querySelector('[role="dialog"], [class*="modal" i]');
