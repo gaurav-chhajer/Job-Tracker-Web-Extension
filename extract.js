@@ -72,47 +72,43 @@ export function extractJob() {
     company = cap(host.split(".")[0]);
     place = pick(['[data-automation-id="locations"] dd']);
   } else if (host.endsWith("indeed.com")) {
-  title = pick(['[data-testid="jobsearch-JobInfoHeader-title"]', ".jobsearch-JobInfoHeader-title"]);
-  company = pick(['[data-testid="inlineHeader-companyName"]', '[data-company-name="true"]']);
-  const jk = new URLSearchParams(location.search).get("jk") || new URLSearchParams(location.search).get("vjk");
-  if (jk) url = `${location.origin}/viewjob?jk=${jk}`;
+    title = pick(['[data-testid="jobsearch-JobInfoHeader-title"]', ".jobsearch-JobInfoHeader-title"]);
+    company = pick(['[data-testid="inlineHeader-companyName"]', '[data-company-name="true"]']);
+    const jk = new URLSearchParams(location.search).get("jk") || new URLSearchParams(location.search).get("vjk");
+    if (jk) url = `${location.origin}/viewjob?jk=${jk}`;
 
-  // Apply flow (smartapply.indeed.com): card reads "Role" then "Company - Place"
-  if (host.startsWith("smartapply.") && !company) {
-    const lines = (document.body.innerText || "").split("\n").map(clean).filter(Boolean);
-    const j = lines.findIndex((l) => /^.+? - .+,.+$/.test(l));  // "Company - City, State"
-    if (j > 0) {
-      const m = lines[j].match(/^(.+?) - (.+)$/);
-      company = m[1];
-      place = m[2];
-      title = title || lines[j - 1];
+    // Apply flow (smartapply.indeed.com): card reads "Role" then "Company - Place"
+    if (host.startsWith("smartapply.") && !company) {
+      const lines = (document.body.innerText || "").split("\n").map(clean).filter(Boolean);
+      const j = lines.findIndex((l) => /^.+? - .+,.+$/.test(l));
+      if (j > 0) {
+        const m = lines[j].match(/^(.+?) - (.+)$/);
+        company = m[1];
+        place = m[2];
+        title = title || lines[j - 1];
+      }
     }
-  }
-} else if (host.endsWith("wellfound.com")) {
-  // Apply modal text reads: "APPLY TO / Heizen / Staff Forward Deployed… / ₹40L–₹50L / Location / Hyderabad …"
-  // Wellfound uses generated class names, so parse the visible text instead of selectors.
-  const dlg = document.querySelector('[role="dialog"], [class*="modal" i]');
-  const lines = ((dlg || document.body).innerText || "")
-    .split("\n").map(clean).filter(Boolean);
-  const i = lines.findIndex((l) => /^apply to$/i.test(l));
-  if (i >= 0) {
-    company = lines[i + 1] || "";
-    title = lines[i + 2] || "";
+  } else if (host.endsWith("wellfound.com")) {
+    // Apply modal text: "APPLY TO / Heizen / Staff Forward Deployed… / pay / Location / Hyderabad …"
+    const dlg = document.querySelector('[role="dialog"], [class*="modal" i]');
+    const lines = ((dlg || document.body).innerText || "").split("\n").map(clean).filter(Boolean);
+    const i = lines.findIndex((l) => /^apply to$/i.test(l));
+    if (i >= 0) {
+      company = lines[i + 1] || "";
+      title = lines[i + 2] || "";
+      const li = lines.findIndex((l) => /^location$/i.test(l));
+      if (li >= 0) place = lines[li + 1] || "";
+    }
+    if (!company && parts[0] === "company" && parts[1]) company = cap(parts[1]);
+    if (!title && parts[0] === "jobs") title = pick(["h1"]);
+  } else if (host.endsWith("workatastartup.com")) {
+    // Title format: "Role at Company | Y Combinator's Work at a Startup"
+    const m = (meta("og:title") || document.title).match(/^(.+) at (.+?)\s*\|/);
+    if (m) { title = clean(m[1]); company = clean(m[2]); }
+    const lines = (document.body.innerText || "").split("\n").map(clean).filter(Boolean);
     const li = lines.findIndex((l) => /^location$/i.test(l));
     if (li >= 0) place = lines[li + 1] || "";
   }
-  // Fallbacks when no modal is open (job page /jobs/123-title or company page)
-  if (!company && parts[0] === "company" && parts[1]) company = cap(parts[1]);
-  if (!title && parts[0] === "jobs") title = pick(["h1"]);
-} else if (host.endsWith("workatastartup.com")) {
-  // Title format: "Role at Company | Y Combinator's Work at a Startup"
-  const m = (meta("og:title") || document.title).match(/^(.+) at (.+?)\s*\|/);
-  if (m) { title = clean(m[1]); company = clean(m[2]); }
-  // Location sits under a "Location" label
-  const lines = (document.body.innerText || "").split("\n").map(clean).filter(Boolean);
-  const li = lines.findIndex((l) => /^location$/i.test(l));
-  if (li >= 0) place = lines[li + 1] || "";
-}
 
   // 2. Structured data (JobPosting JSON-LD) used by most careers pages
   const posts = [];
@@ -146,14 +142,24 @@ export function extractJob() {
   // 3. Generic fallbacks
   if (!title) title = meta("og:title") || pick(["h1"]) || clean(document.title);
   title = title.replace(/\s*[|\-–]\s*(LinkedIn|Indeed.*|Greenhouse|Lever)$/i, "");
-  if (!company) company = meta("og:site_name");
   if (!company) {
-    const m = title.match(/^(.+?)\s+(?:at|@)\s+(.+)$/i);
+    const m = title.match(/^(.+) (?:at|@) (.+?)(?:\s*\|.*)?$/i);
     if (m) { title = m[1]; company = m[2]; }
   }
+  if (!company) company = meta("og:site_name");
   if (!company) {
     const label = host.split(".").filter((x) => !["www", "jobs", "careers", "apply", "boards", "com", "org", "net", "io", "co"].includes(x))[0];
     company = cap(label || host);
+  }
+
+  // The Indeed apply flow has one URL for every job, which would make the
+  // duplicate check treat different applications as the same one. Key by job.
+  if (host.startsWith("smartapply.") && !/[?&]jk=/.test(url)) {
+    const link = document.querySelector('a[href*="jk="]');
+    const jk = link && (new URL(link.href, location.href).searchParams.get("jk"));
+    url = jk
+      ? `https://www.indeed.com/viewjob?jk=${jk}`
+      : `${location.origin}${location.pathname}?app=${encodeURIComponent(`${company}|${title}`.toLowerCase())}`;
   }
 
   // Strip tracking params so the same job always has the same URL
