@@ -6,8 +6,6 @@ Open a job posting, click the extension, and the role, company, location and lin
 Free, no backend, no account. Your Notion token stays in your browser and the extension only talks to
 Notion's API (and, if you use the connection check, LinkedIn).
 
-> Not affiliated with or endorsed by Notion or LinkedIn.
-
 ## Features
 
 - **One-click capture** from LinkedIn, Greenhouse, Lever, Workday and Indeed, plus any careers page that
@@ -77,7 +75,6 @@ Things to know:
 
 - Counts are keyword matches, not exact employees, so common company names include unrelated people.
 - If the page shows no total, the extension counts the profile cards on screen and says "at least N".
-- Automated use of LinkedIn can conflict with its terms. Keep it to one click per job, not bulk lookups.
 - LinkedIn changes its markup often. If counts stop working, the popup shows the reason.
 
 ## Permissions
@@ -120,4 +117,4 @@ Your integration secret is stored in the browser's local extension storage and i
 
 ## License
 
-Add a license of your choice (for example MIT) before publishing.
+[MIT](LICENSE)
