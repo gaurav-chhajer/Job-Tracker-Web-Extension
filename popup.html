@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    body { width: 340px; }
+    main { padding: 14px; }
+    header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 12px; }
+    #check { width: 100%; margin: -4px 0 10px; font-size: 12px; }
+    .network-result { margin: -2px 0 10px; font-size: 12px; color: var(--muted); }
+    .network-result a { margin-right: 10px; }
+    .network-result p { margin: 0 0 6px; color: var(--ink); }
+    .url { color: var(--muted); font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 10px; }
+  </style>
+</head>
+<body>
+  <main id="setup" hidden>
+    <h2>Connect Notion first</h2>
+    <p>Add your Notion token and choose a database to start tracking applications.</p>
+    <button class="primary" id="openSettings">Open settings</button>
+  </main>
+
+  <main id="form" hidden>
+    <header>
+      <h1>Track this application</h1>
+      <button class="link" id="gear">Settings</button>
+    </header>
+    <div id="notice" class="notice" hidden></div>
+    <label>Role <input id="title" autocomplete="off"></label>
+    <label>Company <input id="company" autocomplete="off"></label>
+    <button type="button" class="secondary" id="check">Check my connections here</button>
+    <div id="network" class="network-result" hidden></div>
+    <div class="row">
+      <label>Status <select id="status"></select></label>
+      <label>Date applied <input type="date" id="date"></label>
+    </div>
+    <label>Location <input id="location" autocomplete="off"></label>
+    <label>Referral contact <input id="referral" autocomplete="off"></label>
+    <label>Notes <textarea id="notes" rows="2"></textarea></label>
+    <div class="url" id="urlText"></div>
+    <button class="primary" id="save">Save to Notion</button>
+    <p class="msg" id="msg" role="status"></p>
+  </main>
+  <script type="module" src="popup.js"></script>
+</body>
+</html>
